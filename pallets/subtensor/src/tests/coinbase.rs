@@ -12,6 +12,7 @@ use crate::*;
 use alloc::collections::BTreeMap;
 use approx::assert_abs_diff_eq;
 use frame_support::assert_ok;
+use frame_support::traits::fungible::Balanced;
 use pallet_subtensor_swap::position::PositionId;
 use sp_core::U256;
 use substrate_fixed::{
@@ -767,12 +768,7 @@ fn test_drain_base_with_subnet_with_single_staker_not_registered() {
         let hotkey = U256::from(1);
         let coldkey = U256::from(2);
         let stake_before = AlphaCurrency::from(1_000_000_000);
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &hotkey,
-            &coldkey,
-            netuid,
-            stake_before,
-        );
+        add_virtual_stake(&hotkey, &coldkey, netuid, stake_before);
         let pending_alpha = AlphaCurrency::from(1_000_000_000);
         SubtensorModule::distribute_emission(
             netuid,
@@ -797,12 +793,7 @@ fn test_drain_base_with_subnet_with_single_staker_registered() {
         let coldkey = U256::from(2);
         let stake_before = AlphaCurrency::from(1_000_000_000);
         register_ok_neuron(netuid, hotkey, coldkey, 0);
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &hotkey,
-            &coldkey,
-            netuid,
-            stake_before,
-        );
+        add_virtual_stake(&hotkey, &coldkey, netuid, stake_before);
         let pending_alpha = AlphaCurrency::from(1_000_000_000);
         SubtensorModule::distribute_emission(
             netuid,
@@ -834,18 +825,8 @@ fn test_drain_base_with_subnet_with_single_staker_registered_root_weight() {
         register_ok_neuron(netuid, hotkey, coldkey, 0);
         Delegates::<Test>::insert(hotkey, 0);
         SubtensorModule::set_tao_weight(u64::MAX); // Set TAO weight to 1.0
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &hotkey,
-            &coldkey,
-            NetUid::ROOT,
-            stake_before,
-        );
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &hotkey,
-            &coldkey,
-            netuid,
-            stake_before,
-        );
+        add_virtual_stake(&hotkey, &coldkey, NetUid::ROOT, stake_before);
+        add_virtual_stake(&hotkey, &coldkey, netuid, stake_before);
         let pending_alpha = AlphaCurrency::from(1_000_000_000);
         let pending_root_alpha = AlphaCurrency::from(1_000_000_000);
         assert_eq!(SubnetTAO::<Test>::get(NetUid::ROOT), TaoCurrency::ZERO);
@@ -884,18 +865,8 @@ fn test_drain_base_with_subnet_with_two_stakers_registered() {
         let stake_before = AlphaCurrency::from(1_000_000_000);
         register_ok_neuron(netuid, hotkey1, coldkey, 0);
         register_ok_neuron(netuid, hotkey2, coldkey, 0);
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &hotkey1,
-            &coldkey,
-            netuid,
-            stake_before,
-        );
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &hotkey2,
-            &coldkey,
-            netuid,
-            stake_before,
-        );
+        add_virtual_stake(&hotkey1, &coldkey, netuid, stake_before);
+        add_virtual_stake(&hotkey2, &coldkey, netuid, stake_before);
         let pending_alpha = AlphaCurrency::from(1_000_000_000);
         SubtensorModule::distribute_emission(
             netuid,
@@ -936,30 +907,10 @@ fn test_drain_base_with_subnet_with_two_stakers_registered_and_root() {
         Delegates::<Test>::insert(hotkey1, 0);
         Delegates::<Test>::insert(hotkey2, 0);
         SubtensorModule::set_tao_weight(u64::MAX); // Set TAO weight to 1.0
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &hotkey1,
-            &coldkey,
-            netuid,
-            stake_before,
-        );
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &hotkey1,
-            &coldkey,
-            NetUid::ROOT,
-            stake_before,
-        );
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &hotkey2,
-            &coldkey,
-            netuid,
-            stake_before,
-        );
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &hotkey2,
-            &coldkey,
-            NetUid::ROOT,
-            stake_before,
-        );
+        add_virtual_stake(&hotkey1, &coldkey, netuid, stake_before);
+        add_virtual_stake(&hotkey1, &coldkey, NetUid::ROOT, stake_before);
+        add_virtual_stake(&hotkey2, &coldkey, netuid, stake_before);
+        add_virtual_stake(&hotkey2, &coldkey, NetUid::ROOT, stake_before);
         let pending_tao = TaoCurrency::from(1_000_000_000);
         let pending_alpha = AlphaCurrency::from(1_000_000_000);
         assert_eq!(SubnetTAO::<Test>::get(NetUid::ROOT), TaoCurrency::ZERO);
@@ -1012,30 +963,15 @@ fn test_drain_base_with_subnet_with_two_stakers_registered_and_root_different_am
         register_ok_neuron(netuid, hotkey1, coldkey, 0);
         register_ok_neuron(netuid, hotkey2, coldkey, 0);
         SubtensorModule::set_tao_weight(u64::MAX); // Set TAO weight to 1.0
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &hotkey1,
-            &coldkey,
-            netuid,
-            stake_before,
-        );
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
+        add_virtual_stake(&hotkey1, &coldkey, netuid, stake_before);
+        add_virtual_stake(
             &hotkey1,
             &coldkey,
             NetUid::ROOT,
             stake_before * 2.into(), // Hotkey 1 has twice as much root weight.
         );
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &hotkey2,
-            &coldkey,
-            netuid,
-            stake_before,
-        );
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &hotkey2,
-            &coldkey,
-            NetUid::ROOT,
-            stake_before,
-        );
+        add_virtual_stake(&hotkey2, &coldkey, netuid, stake_before);
+        add_virtual_stake(&hotkey2, &coldkey, NetUid::ROOT, stake_before);
         let pending_tao = TaoCurrency::from(1_000_000_000);
         let pending_alpha = AlphaCurrency::from(1_000_000_000);
         assert_eq!(SubnetTAO::<Test>::get(NetUid::ROOT), TaoCurrency::ZERO);
@@ -1093,30 +1029,15 @@ fn test_drain_base_with_subnet_with_two_stakers_registered_and_root_different_am
         register_ok_neuron(netuid, hotkey1, coldkey, 0);
         register_ok_neuron(netuid, hotkey2, coldkey, 0);
         SubtensorModule::set_tao_weight(u64::MAX / 2); // Set TAO weight to 0.5
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &hotkey1,
-            &coldkey,
-            netuid,
-            stake_before,
-        );
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
+        add_virtual_stake(&hotkey1, &coldkey, netuid, stake_before);
+        add_virtual_stake(
             &hotkey1,
             &coldkey,
             NetUid::ROOT,
             stake_before * 2.into(), // Hotkey 1 has twice as much root weight.
         );
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &hotkey2,
-            &coldkey,
-            netuid,
-            stake_before,
-        );
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &hotkey2,
-            &coldkey,
-            NetUid::ROOT,
-            stake_before,
-        );
+        add_virtual_stake(&hotkey2, &coldkey, netuid, stake_before);
+        add_virtual_stake(&hotkey2, &coldkey, NetUid::ROOT, stake_before);
         let pending_tao = TaoCurrency::from(1_000_000_000);
         let pending_alpha = AlphaCurrency::from(1_000_000_000);
         assert_eq!(SubnetTAO::<Test>::get(NetUid::ROOT), TaoCurrency::ZERO);
@@ -1170,12 +1091,7 @@ fn test_drain_alpha_childkey_parentkey() {
         let coldkey = U256::from(3);
         let stake_before = AlphaCurrency::from(1_000_000_000);
         register_ok_neuron(netuid, child, coldkey, 0);
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &parent,
-            &coldkey,
-            netuid,
-            stake_before,
-        );
+        add_virtual_stake(&parent, &coldkey, netuid, stake_before);
         mock_set_children_no_epochs(netuid, &parent, &[(u64::MAX, child)]);
 
         // Childkey take is 10%
@@ -1237,35 +1153,15 @@ fn test_get_root_children() {
 
         // Add stake for Alice and Bob on root.
         let alice_root_stake = AlphaCurrency::from(1_000_000_000);
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &alice,
-            &cold,
-            NetUid::ROOT,
-            alice_root_stake,
-        );
+        add_virtual_stake(&alice, &cold, NetUid::ROOT, alice_root_stake);
         let bob_root_stake = AlphaCurrency::from(1_000_000_000);
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &bob,
-            &cold,
-            NetUid::ROOT,
-            alice_root_stake,
-        );
+        add_virtual_stake(&bob, &cold, NetUid::ROOT, alice_root_stake);
 
         // Add stake for Alice and Bob on netuid.
         let alice_alpha_stake = AlphaCurrency::from(1_000_000_000);
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &alice,
-            &cold,
-            alpha,
-            alice_alpha_stake,
-        );
+        add_virtual_stake(&alice, &cold, alpha, alice_alpha_stake);
         let bob_alpha_stake = AlphaCurrency::from(1_000_000_000);
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &bob,
-            &cold,
-            alpha,
-            bob_alpha_stake,
-        );
+        add_virtual_stake(&bob, &cold, alpha, bob_alpha_stake);
 
         // Set Bob as 100% child of Alice on root.
         // mock_set_children_no_epochs( NetUid::ROOT, &alice, &[(u64::MAX, bob)]);
@@ -1361,34 +1257,14 @@ fn test_get_root_children_drain() {
         ));
         // Add stake for Alice and Bob on root.
         let alice_root_stake = 1_000_000_000;
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &alice,
-            &cold_alice,
-            NetUid::ROOT,
-            alice_root_stake.into(),
-        );
+        add_virtual_stake(&alice, &cold_alice, NetUid::ROOT, alice_root_stake.into());
         let bob_root_stake = 1_000_000_000;
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &bob,
-            &cold_bob,
-            NetUid::ROOT,
-            bob_root_stake.into(),
-        );
+        add_virtual_stake(&bob, &cold_bob, NetUid::ROOT, bob_root_stake.into());
         // Add stake for Alice and Bob on netuid.
         let alice_alpha_stake = AlphaCurrency::from(1_000_000_000);
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &alice,
-            &cold_alice,
-            alpha,
-            alice_alpha_stake,
-        );
+        add_virtual_stake(&alice, &cold_alice, alpha, alice_alpha_stake);
         let bob_alpha_stake = AlphaCurrency::from(1_000_000_000);
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &bob,
-            &cold_bob,
-            alpha,
-            bob_alpha_stake,
-        );
+        add_virtual_stake(&bob, &cold_bob, alpha, bob_alpha_stake);
         // Set Bob as 100% child of Alice on root.
         mock_set_children_no_epochs(alpha, &alice, &[(u64::MAX, bob)]);
         // Set Bob childkey take to zero.
@@ -1507,34 +1383,14 @@ fn test_get_root_children_drain_half_proportion() {
         ));
         // Add stake for Alice and Bob on root.
         let alice_root_stake = AlphaCurrency::from(1_000_000_000);
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &alice,
-            &cold_alice,
-            NetUid::ROOT,
-            alice_root_stake,
-        );
+        add_virtual_stake(&alice, &cold_alice, NetUid::ROOT, alice_root_stake);
         let bob_root_stake = AlphaCurrency::from(1_000_000_000);
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &bob,
-            &cold_bob,
-            NetUid::ROOT,
-            alice_root_stake,
-        );
+        add_virtual_stake(&bob, &cold_bob, NetUid::ROOT, alice_root_stake);
         // Add stake for Alice and Bob on netuid.
         let alice_alpha_stake = AlphaCurrency::from(1_000_000_000);
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &alice,
-            &cold_alice,
-            alpha,
-            alice_alpha_stake,
-        );
+        add_virtual_stake(&alice, &cold_alice, alpha, alice_alpha_stake);
         let bob_alpha_stake = AlphaCurrency::from(1_000_000_000);
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &bob,
-            &cold_bob,
-            alpha,
-            bob_alpha_stake,
-        );
+        add_virtual_stake(&bob, &cold_bob, alpha, bob_alpha_stake);
         // Set Bob as 100% child of Alice on root.
         mock_set_children_no_epochs(alpha, &alice, &[(u64::MAX / 2, bob)]);
 
@@ -1595,34 +1451,14 @@ fn test_get_root_children_drain_with_take() {
         ));
         // Add stake for Alice and Bob on root.
         let alice_root_stake = AlphaCurrency::from(1_000_000_000);
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &alice,
-            &cold_alice,
-            NetUid::ROOT,
-            alice_root_stake,
-        );
+        add_virtual_stake(&alice, &cold_alice, NetUid::ROOT, alice_root_stake);
         let bob_root_stake = AlphaCurrency::from(1_000_000_000);
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &bob,
-            &cold_bob,
-            NetUid::ROOT,
-            alice_root_stake,
-        );
+        add_virtual_stake(&bob, &cold_bob, NetUid::ROOT, alice_root_stake);
         // Add stake for Alice and Bob on netuid.
         let alice_alpha_stake = AlphaCurrency::from(1_000_000_000);
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &alice,
-            &cold_alice,
-            alpha,
-            alice_alpha_stake,
-        );
+        add_virtual_stake(&alice, &cold_alice, alpha, alice_alpha_stake);
         let bob_alpha_stake = AlphaCurrency::from(1_000_000_000);
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &bob,
-            &cold_bob,
-            alpha,
-            bob_alpha_stake,
-        );
+        add_virtual_stake(&bob, &cold_bob, alpha, bob_alpha_stake);
         // Set Bob as 100% child of Alice on root.
         ChildkeyTake::<Test>::insert(bob, alpha, u16::MAX);
         mock_set_children_no_epochs(alpha, &alice, &[(u64::MAX, bob)]);
@@ -1683,34 +1519,14 @@ fn test_get_root_children_drain_with_half_take() {
         ));
         // Add stake for Alice and Bob on root.
         let alice_root_stake = AlphaCurrency::from(1_000_000_000);
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &alice,
-            &cold_alice,
-            NetUid::ROOT,
-            alice_root_stake,
-        );
+        add_virtual_stake(&alice, &cold_alice, NetUid::ROOT, alice_root_stake);
         let bob_root_stake = AlphaCurrency::from(1_000_000_000);
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &bob,
-            &cold_bob,
-            NetUid::ROOT,
-            alice_root_stake,
-        );
+        add_virtual_stake(&bob, &cold_bob, NetUid::ROOT, alice_root_stake);
         // Add stake for Alice and Bob on netuid.
         let alice_alpha_stake = AlphaCurrency::from(1_000_000_000);
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &alice,
-            &cold_alice,
-            alpha,
-            alice_alpha_stake,
-        );
+        add_virtual_stake(&alice, &cold_alice, alpha, alice_alpha_stake);
         let bob_alpha_stake = AlphaCurrency::from(1_000_000_000);
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &bob,
-            &cold_bob,
-            alpha,
-            bob_alpha_stake,
-        );
+        add_virtual_stake(&bob, &cold_bob, alpha, bob_alpha_stake);
         // Set Bob as 100% child of Alice on root.
         ChildkeyTake::<Test>::insert(bob, alpha, u16::MAX / 2);
         mock_set_children_no_epochs(alpha, &alice, &[(u64::MAX, bob)]);
@@ -1769,14 +1585,14 @@ fn test_get_root_children_drain_with_half_take() {
 //         ));
 //         // Add stake for Alice and Bob on root.
 //         let alice_root_stake = AlphaCurrency::from(1_000_000_000);
-//         SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
+//         add_virtual_stake(
 //             &alice,
 //             &cold,
 //             NetUid::ROOT,
 //             alice_root_stake,
 //         );
 //         let bob_root_stake = AlphaCurrency::from(1_000_000_000);
-//         SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
+//         add_virtual_stake(
 //             &bob,
 //             &cold,
 //             NetUid::ROOT,
@@ -1784,14 +1600,14 @@ fn test_get_root_children_drain_with_half_take() {
 //         );
 //         // Add stake for Alice and Bob on netuid.
 //         let alice_alpha_stake = AlphaCurrency::from(1_000_000_000);
-//         SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
+//         add_virtual_stake(
 //             &alice,
 //             &cold,
 //             alpha,
 //             alice_alpha_stake,
 //         );
 //         let bob_alpha_stake = AlphaCurrency::from(1_000_000_000);
-//         SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
+//         add_virtual_stake(
 //             &bob,
 //             &cold,
 //             alpha,
@@ -2206,12 +2022,7 @@ fn test_calculate_dividend_and_incentive_distribution() {
         let coldkey = U256::from(2);
         register_ok_neuron(netuid, hotkey, coldkey, 0);
         // Give non-zero alpha
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &hotkey,
-            &coldkey,
-            netuid,
-            1.into(),
-        );
+        add_virtual_stake(&hotkey, &coldkey, netuid, 1.into());
 
         let pending_alpha = AlphaCurrency::from(123_456_789);
         let pending_validator_alpha = pending_alpha / 2.into(); // Pay half to validators.
@@ -2255,12 +2066,7 @@ fn test_calculate_dividend_and_incentive_distribution_all_to_validators() {
         let coldkey = U256::from(2);
         register_ok_neuron(netuid, hotkey, coldkey, 0);
         // Give non-zero alpha
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &hotkey,
-            &coldkey,
-            netuid,
-            1.into(),
-        );
+        add_virtual_stake(&hotkey, &coldkey, netuid, 1.into());
 
         let pending_alpha = AlphaCurrency::from(123_456_789);
         let pending_validator_alpha = pending_alpha; // Pay all to validators.
@@ -2302,12 +2108,7 @@ fn test_calculate_dividends_and_incentives() {
         let coldkey = U256::from(2);
         register_ok_neuron(netuid, hotkey, coldkey, 0);
         // Give non-zero alpha
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &hotkey,
-            &coldkey,
-            netuid,
-            1.into(),
-        );
+        add_virtual_stake(&hotkey, &coldkey, netuid, 1.into());
 
         let divdends = AlphaCurrency::from(123_456_789);
         let incentive = AlphaCurrency::from(683_051_923);
@@ -2342,12 +2143,7 @@ fn test_calculate_dividends_and_incentives_only_validators() {
         let coldkey = U256::from(2);
         register_ok_neuron(netuid, hotkey, coldkey, 0);
         // Give non-zero alpha
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &hotkey,
-            &coldkey,
-            netuid,
-            1.into(),
-        );
+        add_virtual_stake(&hotkey, &coldkey, netuid, 1.into());
 
         let divdends = AlphaCurrency::from(123_456_789);
         let incentive = AlphaCurrency::ZERO;
@@ -2382,12 +2178,7 @@ fn test_calculate_dividends_and_incentives_only_miners() {
         let coldkey = U256::from(2);
         register_ok_neuron(netuid, hotkey, coldkey, 0);
         // Give non-zero alpha
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &hotkey,
-            &coldkey,
-            netuid,
-            1.into(),
-        );
+        add_virtual_stake(&hotkey, &coldkey, netuid, 1.into());
 
         let divdends = AlphaCurrency::ZERO;
         let incentive = AlphaCurrency::from(123_456_789);
@@ -2419,12 +2210,7 @@ fn test_distribute_emission_no_miners_all_drained() {
         let init_stake = 1;
         register_ok_neuron(netuid, hotkey, coldkey, 0);
         // Give non-zero stake
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &hotkey,
-            &coldkey,
-            netuid,
-            init_stake.into(),
-        );
+        add_virtual_stake(&hotkey, &coldkey, netuid, init_stake.into());
         assert_eq!(
             SubtensorModule::get_total_stake_for_hotkey(&hotkey),
             init_stake.into()
@@ -2474,12 +2260,7 @@ fn test_distribute_emission_zero_emission() {
         register_ok_neuron(netuid, hotkey, coldkey, 0);
         register_ok_neuron(netuid, miner_hk, miner_ck, 0);
         // Give non-zero stake
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &hotkey,
-            &coldkey,
-            netuid,
-            init_stake.into(),
-        );
+        add_virtual_stake(&hotkey, &coldkey, netuid, init_stake.into());
         assert_eq!(
             SubtensorModule::get_total_stake_for_hotkey(&hotkey),
             init_stake.into()
@@ -2566,12 +2347,7 @@ fn test_run_coinbase_not_started() {
         register_ok_neuron(netuid, miner_hk, miner_ck, 0);
         register_ok_neuron(netuid, sn_owner_hk, sn_owner_ck, 0);
         // Give non-zero stake
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &hotkey,
-            &coldkey,
-            netuid,
-            init_stake.into(),
-        );
+        add_virtual_stake(&hotkey, &coldkey, netuid, init_stake.into());
         assert_eq!(
             SubtensorModule::get_total_stake_for_hotkey(&hotkey),
             init_stake.into()
@@ -2657,12 +2433,7 @@ fn test_run_coinbase_not_started_start_after() {
         register_ok_neuron(netuid, miner_hk, miner_ck, 0);
         register_ok_neuron(netuid, sn_owner_hk, sn_owner_ck, 0);
         // Give non-zero stake
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &hotkey,
-            &coldkey,
-            netuid,
-            init_stake.into(),
-        );
+        add_virtual_stake(&hotkey, &coldkey, netuid, init_stake.into());
         assert_eq!(
             SubtensorModule::get_total_stake_for_hotkey(&hotkey),
             init_stake.into()
@@ -2788,12 +2559,7 @@ fn test_drain_alpha_childkey_parentkey_with_burn() {
         let coldkey = U256::from(3);
         let stake_before = AlphaCurrency::from(1_000_000_000);
         register_ok_neuron(netuid, child, coldkey, 0);
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &parent,
-            &coldkey,
-            netuid,
-            stake_before,
-        );
+        add_virtual_stake(&parent, &coldkey, netuid, stake_before);
         mock_set_children_no_epochs(netuid, &parent, &[(u64::MAX, child)]);
 
         // Childkey take is 10%
@@ -3541,7 +3307,14 @@ fn test_coinbase_inject_and_maybe_swap_does_not_skew_reserves() {
         let excess_tao = BTreeMap::from([(netuid0, U96F32::saturating_from_num(789100))]);
 
         // Run the inject and maybe swap
-        SubtensorModule::inject_and_maybe_swap(&[netuid0], &tao_in, &alpha_in, &excess_tao);
+        let mut imbalance = <Test as Config>::Currency::issue(0);
+        SubtensorModule::inject_and_maybe_swap(
+            &[netuid0],
+            &tao_in,
+            &alpha_in,
+            &excess_tao,
+            imbalance,
+        );
 
         let tao_in_after = SubnetTAO::<Test>::get(netuid0);
         let alpha_in_after = SubnetAlphaIn::<Test>::get(netuid0);
@@ -3688,7 +3461,10 @@ fn test_coinbase_emit_to_subnets_with_no_root_sell() {
         assert!(tao_emission / price <= alpha_emission);
 
         // ==== Run the emit to subnets =====
-        SubtensorModule::emit_to_subnets(&[netuid0], &subnet_emissions, root_sell_flag);
+        let mut imbalance = <Test as Config>::Currency::issue(0);
+        SubtensorModule::emit_to_subnets(&[netuid0], &subnet_emissions, root_sell_flag, imbalance);
+        let mut imbalance = <Test as Config>::Currency::issue(0);
+        SubtensorModule::emit_to_subnets(&[netuid0], &subnet_emissions, root_sell_flag, imbalance);
 
         // Find the owner cut expected
         let owner_cut: U96F32 = SubtensorModule::get_float_subnet_owner_cut();
@@ -3779,7 +3555,8 @@ fn test_coinbase_emit_to_subnets_with_root_sell() {
         assert!(tao_emission / price <= alpha_emission);
 
         // ==== Run the emit to subnets =====
-        SubtensorModule::emit_to_subnets(&[netuid0], &subnet_emissions, root_sell_flag);
+        let mut imbalance = <Test as Config>::Currency::issue(0);
+        SubtensorModule::emit_to_subnets(&[netuid0], &subnet_emissions, root_sell_flag, imbalance);
 
         // Find the owner cut expected
         let owner_cut: U96F32 = SubtensorModule::get_float_subnet_owner_cut();

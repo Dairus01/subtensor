@@ -187,12 +187,7 @@ fn init_run_epochs(
         // let stake: u64 = 1; // alternative test: all nodes receive stake, should be same outcome, except stake
         SubtensorModule::add_balance_to_coldkey_account(&(U256::from(key)), stake);
         SubtensorModule::append_neuron(netuid, &(U256::from(key)), 0);
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &U256::from(key),
-            &U256::from(key),
-            netuid,
-            stake.into(),
-        );
+        add_virtual_stake(&U256::from(key), &U256::from(key), netuid, stake.into());
     }
     assert_eq!(SubtensorModule::get_subnetwork_n(netuid), n);
 

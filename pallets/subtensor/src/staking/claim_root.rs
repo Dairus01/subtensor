@@ -185,6 +185,9 @@ impl<T: Config> Pallet<T> {
                 NetUid::ROOT,
                 owed_tao.amount_paid_out.to_u64().into(),
             );
+            SubnetAlphaOut::<T>::mutate(NetUid::ROOT, |total| {
+                *total = total.saturating_add(owed_tao.amount_paid_out.to_u64().into());
+            });
 
             Self::add_stake_adjust_root_claimed_for_hotkey_and_coldkey(
                 hotkey,
@@ -201,6 +204,9 @@ impl<T: Config> Pallet<T> {
                 netuid,
                 owed_u64.into(),
             );
+            SubnetAlphaOut::<T>::mutate(netuid, |total| {
+                *total = total.saturating_add(owed_u64.into());
+            });
         }
 
         // Increase root claimed by owed amount.

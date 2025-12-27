@@ -381,33 +381,13 @@ fn test_get_stake_for_hotkey_on_subnet() {
         // Set parent-child relationship with 100% stake allocation
         mock_set_children(&coldkey1, &parent, netuid, &[(u64::MAX, child)]);
         // Stake 1000 to parent from coldkey1
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &parent,
-            &coldkey1,
-            netuid,
-            1000.into(),
-        );
+        add_virtual_stake(&parent, &coldkey1, netuid, 1000.into());
         // Stake 1000 to parent from coldkey2
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &parent,
-            &coldkey2,
-            netuid,
-            1000.into(),
-        );
+        add_virtual_stake(&parent, &coldkey2, netuid, 1000.into());
         // Stake 1000 to child from coldkey1
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &child,
-            &coldkey1,
-            netuid,
-            1000.into(),
-        );
+        add_virtual_stake(&child, &coldkey1, netuid, 1000.into());
         // Stake 1000 to child from coldkey2
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &child,
-            &coldkey2,
-            netuid,
-            1000.into(),
-        );
+        add_virtual_stake(&child, &coldkey2, netuid, 1000.into());
         let parent_stake = SubtensorModule::get_inherited_for_hotkey_on_subnet(&parent, netuid);
         let child_stake = SubtensorModule::get_inherited_for_hotkey_on_subnet(&child, netuid);
         // The parent should have 0 stake as it's all allocated to the child
@@ -1464,12 +1444,7 @@ fn test_children_stake_values() {
         register_ok_neuron(netuid, child1, coldkey, 0);
         register_ok_neuron(netuid, child2, coldkey, 0);
         register_ok_neuron(netuid, child3, coldkey, 0);
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &hotkey,
-            &coldkey,
-            netuid,
-            100_000_000_000_000.into(),
-        );
+        add_virtual_stake(&hotkey, &coldkey, netuid, 100_000_000_000_000.into());
 
         // Set multiple children with proportions.
         mock_set_children_no_epochs(
@@ -1655,12 +1630,7 @@ fn test_get_stake_for_hotkey_on_subnet_basic() {
 
         add_network(netuid, 1, 0);
         register_ok_neuron(netuid, hotkey, coldkey, 0);
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &hotkey,
-            &coldkey,
-            netuid,
-            1000.into(),
-        );
+        add_virtual_stake(&hotkey, &coldkey, netuid, 1000.into());
         assert_eq!(
             SubtensorModule::get_inherited_for_hotkey_on_subnet(&hotkey, netuid),
             1000.into()
@@ -1685,18 +1655,8 @@ fn test_get_stake_for_hotkey_on_subnet_multiple_coldkeys() {
         add_network(netuid, 1, 0);
         register_ok_neuron(netuid, hotkey, coldkey1, 0);
 
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &hotkey,
-            &coldkey1,
-            netuid,
-            1000.into(),
-        );
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &hotkey,
-            &coldkey2,
-            netuid,
-            2000.into(),
-        );
+        add_virtual_stake(&hotkey, &coldkey1, netuid, 1000.into());
+        add_virtual_stake(&hotkey, &coldkey2, netuid, 2000.into());
 
         assert_eq!(
             SubtensorModule::get_inherited_for_hotkey_on_subnet(&hotkey, netuid),
@@ -1725,12 +1685,7 @@ fn test_get_stake_for_hotkey_on_subnet_single_parent_child() {
         register_ok_neuron(netuid, parent, coldkey, 0);
         register_ok_neuron(netuid, child, coldkey, 0);
 
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &parent,
-            &coldkey,
-            netuid,
-            1_000_000_000.into(),
-        );
+        add_virtual_stake(&parent, &coldkey, netuid, 1_000_000_000.into());
 
         mock_set_children_no_epochs(netuid, &parent, &[(u64::MAX, child)]);
 
@@ -1769,18 +1724,8 @@ fn test_get_stake_for_hotkey_on_subnet_multiple_parents_single_child() {
         register_ok_neuron(netuid, parent2, coldkey, 0);
         register_ok_neuron(netuid, child, coldkey, 0);
 
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &parent1,
-            &coldkey,
-            netuid,
-            1000.into(),
-        );
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &parent2,
-            &coldkey,
-            netuid,
-            2000.into(),
-        );
+        add_virtual_stake(&parent1, &coldkey, netuid, 1000.into());
+        add_virtual_stake(&parent2, &coldkey, netuid, 2000.into());
 
         mock_set_children_no_epochs(netuid, &parent1, &[(u64::MAX / 2, child)]);
         mock_set_children_no_epochs(netuid, &parent2, &[(u64::MAX / 2, child)]);
@@ -1831,12 +1776,7 @@ fn test_get_stake_for_hotkey_on_subnet_single_parent_multiple_children() {
         register_ok_neuron(netuid, child2, coldkey, 0);
 
         let total_stake = 3000.into();
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &parent,
-            &coldkey,
-            netuid,
-            total_stake,
-        );
+        add_virtual_stake(&parent, &coldkey, netuid, total_stake);
 
         mock_set_children_no_epochs(
             netuid,
@@ -1898,12 +1838,7 @@ fn test_get_stake_for_hotkey_on_subnet_edge_cases() {
         let network_max_stake = 600_000_000_000_000.into();
 
         // Increase stake to the network max
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &parent,
-            &coldkey,
-            netuid,
-            network_max_stake,
-        );
+        add_virtual_stake(&parent, &coldkey, netuid, network_max_stake);
 
         // Test with 0% and 100% stake allocation
         mock_set_children_no_epochs(netuid, &parent, &[(0, child1), (u64::MAX, child2)]);
@@ -1966,12 +1901,7 @@ fn test_get_stake_for_hotkey_on_subnet_complex_hierarchy() {
         register_ok_neuron(netuid, grandchild, coldkey_grandchild, 0);
 
         let total_stake = 1000.into();
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &parent,
-            &coldkey_parent,
-            netuid,
-            total_stake,
-        );
+        add_virtual_stake(&parent, &coldkey_parent, netuid, total_stake);
 
         log::info!("Initial stakes:");
         log::info!(
@@ -2162,12 +2092,7 @@ fn test_get_stake_for_hotkey_on_subnet_multiple_networks() {
         register_ok_neuron(netuid1, hotkey, coldkey, 0);
         register_ok_neuron(netuid2, hotkey, coldkey, 0);
 
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &hotkey,
-            &coldkey,
-            netuid1,
-            1000.into(),
-        );
+        add_virtual_stake(&hotkey, &coldkey, netuid1, 1000.into());
 
         close(
             SubtensorModule::get_inherited_for_hotkey_on_subnet(&hotkey, netuid1).into(),
@@ -2309,7 +2234,7 @@ fn test_do_set_child_cooldown_period() {
         register_ok_neuron(netuid, parent, coldkey, 0);
 
         // Set minimum stake for setting children
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
+        add_virtual_stake(
             &parent,
             &coldkey,
             netuid,
@@ -2334,7 +2259,7 @@ fn test_do_set_child_cooldown_period() {
         );
 
         wait_and_set_pending_children(netuid);
-        SubtensorModule::decrease_stake_for_hotkey_and_coldkey_on_subnet(
+        remove_virtual_stake(
             &parent,
             &coldkey,
             netuid,
@@ -2382,7 +2307,7 @@ fn test_do_set_pending_children_runs_in_epoch() {
         register_ok_neuron(netuid, parent, coldkey, 0);
 
         // Set minimum stake for setting children
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
+        add_virtual_stake(
             &parent,
             &coldkey,
             netuid,
@@ -2455,7 +2380,7 @@ fn test_revoke_child_no_min_stake_check() {
         StakeThreshold::<Test>::put(1_000_000_000_000);
 
         let (_, fee) = mock::swap_tao_to_alpha(NetUid::ROOT, StakeThreshold::<Test>::get().into());
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
+        add_virtual_stake(
             &parent,
             &coldkey,
             NetUid::ROOT,
@@ -2475,7 +2400,7 @@ fn test_revoke_child_no_min_stake_check() {
         assert_eq!(children_before, vec![]);
 
         wait_and_set_pending_children(netuid);
-        SubtensorModule::decrease_stake_for_hotkey_and_coldkey_on_subnet(
+        remove_virtual_stake(
             &parent,
             &coldkey,
             NetUid::ROOT,
@@ -2526,7 +2451,7 @@ fn test_do_set_child_registration_disabled() {
         // Set minimum stake for setting children
         StakeThreshold::<Test>::put(1_000_000_000_000);
         let (_, fee) = mock::swap_tao_to_alpha(netuid, StakeThreshold::<Test>::get().into());
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
+        add_virtual_stake(
             &parent,
             &coldkey,
             netuid,
@@ -2545,7 +2470,7 @@ fn test_do_set_child_registration_disabled() {
         ));
 
         wait_and_set_pending_children(netuid);
-        SubtensorModule::decrease_stake_for_hotkey_and_coldkey_on_subnet(
+        remove_virtual_stake(
             &parent,
             &coldkey,
             netuid,
@@ -2651,13 +2576,8 @@ fn test_childkey_set_weights_single_parent() {
         register_ok_neuron(netuid, child, coldkey_child, 1);
         register_ok_neuron(netuid, weight_setter, coldkey_weight_setter, 1);
 
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &parent,
-            &coldkey_parent,
-            netuid,
-            stake_to_give_child.into(),
-        );
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
+        add_virtual_stake(&parent, &coldkey_parent, netuid, stake_to_give_child.into());
+        add_virtual_stake(
             &weight_setter,
             &coldkey_weight_setter,
             netuid,
@@ -2753,12 +2673,7 @@ fn test_set_weights_no_parent() {
         // Register a spare key
         register_ok_neuron(netuid, spare_hk, spare_ck, 1);
 
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &hotkey,
-            &coldkey,
-            netuid,
-            stake_to_give_child.into(),
-        );
+        add_virtual_stake(&hotkey, &coldkey, netuid, stake_to_give_child.into());
 
         SubtensorModule::set_weights_set_rate_limit(netuid, 0);
 
@@ -3016,7 +2931,7 @@ fn test_parent_child_chain_emission() {
 
         // Set the stakes directly
         // This avoids needing to swap tao to alpha, impacting the initial stake distribution.
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
+        add_virtual_stake(
             &hotkey_a,
             &coldkey_a,
             netuid,
@@ -3024,7 +2939,7 @@ fn test_parent_child_chain_emission() {
                 .saturating_to_num::<u64>()
                 .into(),
         );
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
+        add_virtual_stake(
             &hotkey_b,
             &coldkey_b,
             netuid,
@@ -3032,7 +2947,7 @@ fn test_parent_child_chain_emission() {
                 .saturating_to_num::<u64>()
                 .into(),
         );
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
+        add_virtual_stake(
             &hotkey_c,
             &coldkey_c,
             netuid,
@@ -3215,7 +3130,7 @@ fn test_parent_child_chain_epoch() {
 
         // Set the stakes directly
         // This avoids needing to swap tao to alpha, impacting the initial stake distribution.
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
+        add_virtual_stake(
             &hotkey_a,
             &coldkey_a,
             netuid,
@@ -3223,7 +3138,7 @@ fn test_parent_child_chain_epoch() {
                 .saturating_to_num::<u64>()
                 .into(),
         );
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
+        add_virtual_stake(
             &hotkey_b,
             &coldkey_b,
             netuid,
@@ -3231,7 +3146,7 @@ fn test_parent_child_chain_epoch() {
                 .saturating_to_num::<u64>()
                 .into(),
         );
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
+        add_virtual_stake(
             &hotkey_c,
             &coldkey_c,
             netuid,
@@ -3363,7 +3278,7 @@ fn test_dividend_distribution_with_children() {
 
         // Set the stakes directly
         // This avoids needing to swap tao to alpha, impacting the initial stake distribution.
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
+        add_virtual_stake(
             &hotkey_a,
             &coldkey_a,
             netuid,
@@ -3371,7 +3286,7 @@ fn test_dividend_distribution_with_children() {
                 .saturating_to_num::<u64>()
                 .into(),
         );
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
+        add_virtual_stake(
             &hotkey_b,
             &coldkey_b,
             netuid,
@@ -3379,7 +3294,7 @@ fn test_dividend_distribution_with_children() {
                 .saturating_to_num::<u64>()
                 .into(),
         );
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
+        add_virtual_stake(
             &hotkey_c,
             &coldkey_c,
             netuid,
@@ -3601,7 +3516,7 @@ fn test_dynamic_parent_child_relationships() {
 
         // Set the stakes directly
         // This avoids needing to swap tao to alpha, impacting the initial stake distribution.
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
+        add_virtual_stake(
             &parent,
             &coldkey_parent,
             netuid,
@@ -3609,7 +3524,7 @@ fn test_dynamic_parent_child_relationships() {
                 .saturating_to_num::<u64>()
                 .into(),
         );
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
+        add_virtual_stake(
             &child1,
             &coldkey_child1,
             netuid,
@@ -3617,7 +3532,7 @@ fn test_dynamic_parent_child_relationships() {
                 .saturating_to_num::<u64>()
                 .into(),
         );
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
+        add_virtual_stake(
             &child2,
             &coldkey_child2,
             netuid,
@@ -3889,7 +3804,7 @@ fn test_dividend_distribution_with_children_same_coldkey_owner() {
 
         // Set the stakes directly
         // This avoids needing to swap tao to alpha, impacting the initial stake distribution.
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
+        add_virtual_stake(
             &hotkey_a,
             &coldkey_a,
             netuid,
@@ -3897,7 +3812,7 @@ fn test_dividend_distribution_with_children_same_coldkey_owner() {
                 .saturating_to_num::<u64>()
                 .into(),
         );
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
+        add_virtual_stake(
             &hotkey_b,
             &coldkey_a,
             netuid,

@@ -78,7 +78,7 @@ fn setup_epoch(neurons: Vec<Neuron>, mechanism_count: u8) {
         permit_vec.push(neuron.validator);
 
         // Setup stake
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
+        add_virtual_stake(
             &hotkey,
             &U256::from(COLDKEY),
             netuid,

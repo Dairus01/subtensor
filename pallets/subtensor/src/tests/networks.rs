@@ -220,12 +220,7 @@ fn dissolve_owner_cut_refund_logic() {
         // One staker and a TAO pot (not relevant to refund amount).
         let sh = U256::from(77);
         let sc = U256::from(88);
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &sh,
-            &sc,
-            net,
-            AlphaCurrency::from(800u64),
-        );
+        add_virtual_stake(&sh, &sc, net, AlphaCurrency::from(800u64));
         SubnetTAO::<Test>::insert(net, TaoCurrency::from(1_000));
 
         // Lock & emissions: total emitted α = 800.
@@ -967,7 +962,7 @@ fn destroy_alpha_out_refund_gating_by_registration_block() {
         // give some stake to other key
         let other_cold = U256::from(1_234);
         let other_hot = U256::from(2_345);
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
+        add_virtual_stake(
             &other_hot,
             &other_cold,
             netuid,
@@ -1032,7 +1027,7 @@ fn destroy_alpha_out_refund_gating_by_registration_block() {
         // give some stake to other key
         let other_cold = U256::from(1_234);
         let other_hot = U256::from(2_345);
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
+        add_virtual_stake(
             &other_hot,
             &other_cold,
             netuid,

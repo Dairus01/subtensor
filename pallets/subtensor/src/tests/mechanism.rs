@@ -461,18 +461,8 @@ pub fn mock_epoch_state(netuid: NetUid, ck0: U256, hk0: U256, ck1: U256, hk1: U2
 
     // Add stake
     let stake_amount = AlphaCurrency::from(1_000_000_000); // 1 Alpha
-    SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-        &hk0,
-        &ck0,
-        netuid,
-        stake_amount,
-    );
-    SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-        &hk1,
-        &ck1,
-        netuid,
-        stake_amount,
-    );
+    add_virtual_stake(&hk0, &ck0, netuid, stake_amount);
+    add_virtual_stake(&hk1, &ck1, netuid, stake_amount);
 
     // Non-zero stake above threshold; permit both as validators.
     StakeThreshold::<Test>::put(0u64);
@@ -951,12 +941,7 @@ fn test_set_mechanism_weights_happy_path_sets_row_under_subid() {
         SubtensorModule::set_stake_threshold(0);
         SubtensorModule::set_validator_permit_for_uid(netuid, uid1, true);
         SubtensorModule::add_balance_to_coldkey_account(&ck1, 1);
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &hk1,
-            &ck1,
-            netuid,
-            1.into(),
-        );
+        add_virtual_stake(&hk1, &ck1, netuid, 1.into());
 
         // Have at least two sub-subnets; write under mecid = 1
         MechanismCountCurrent::<Test>::insert(netuid, MechId::from(2u8));
@@ -1008,12 +993,7 @@ fn test_set_mechanism_weights_above_mechanism_count_fails() {
         SubtensorModule::set_stake_threshold(0);
         SubtensorModule::set_validator_permit_for_uid(netuid, uid1, true);
         SubtensorModule::add_balance_to_coldkey_account(&ck1, 1);
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &hk1,
-            &ck1,
-            netuid,
-            1.into(),
-        );
+        add_virtual_stake(&hk1, &ck1, netuid, 1.into());
 
         // Have exactly two sub-subnets; write under mecid = 1
         MechanismCountCurrent::<Test>::insert(netuid, MechId::from(2u8));
@@ -1066,12 +1046,7 @@ fn test_commit_reveal_mechanism_weights_ok() {
         SubtensorModule::set_validator_permit_for_uid(netuid, uid1, true);
         SubtensorModule::set_commit_reveal_weights_enabled(netuid, true);
         SubtensorModule::add_balance_to_coldkey_account(&ck1, 1);
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &hk1,
-            &ck1,
-            netuid,
-            1.into(),
-        );
+        add_virtual_stake(&hk1, &ck1, netuid, 1.into());
 
         // Ensure sub-subnet exists; write under mecid = 1
         MechanismCountCurrent::<Test>::insert(netuid, MechId::from(2u8));
@@ -1150,12 +1125,7 @@ fn test_commit_reveal_above_mechanism_count_fails() {
         SubtensorModule::set_validator_permit_for_uid(netuid, uid1, true);
         SubtensorModule::set_commit_reveal_weights_enabled(netuid, true);
         SubtensorModule::add_balance_to_coldkey_account(&ck1, 1);
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &hk1,
-            &ck1,
-            netuid,
-            1.into(),
-        );
+        add_virtual_stake(&hk1, &ck1, netuid, 1.into());
 
         // Ensure there are two mechanisms: 0 and 1
         MechanismCountCurrent::<Test>::insert(netuid, MechId::from(2u8));
@@ -1238,8 +1208,8 @@ fn test_reveal_crv3_commits_sub_success() {
         SubtensorModule::set_validator_permit_for_uid(netuid, uid2, true);
         SubtensorModule::add_balance_to_coldkey_account(&U256::from(3), 1);
         SubtensorModule::add_balance_to_coldkey_account(&U256::from(4), 1);
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(&hotkey1, &U256::from(3), netuid, 1.into());
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(&hotkey2, &U256::from(4), netuid, 1.into());
+        add_virtual_stake(&hotkey1, &U256::from(3), netuid, 1.into());
+        add_virtual_stake(&hotkey2, &U256::from(4), netuid, 1.into());
 
         let version_key = SubtensorModule::get_weights_version_key(netuid);
 
@@ -1342,7 +1312,7 @@ fn test_crv3_above_mechanism_count_fails() {
 
         SubtensorModule::set_validator_permit_for_uid(netuid, uid1, true);
         SubtensorModule::add_balance_to_coldkey_account(&U256::from(3), 1);
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(&hotkey1, &U256::from(3), netuid, 1.into());
+        add_virtual_stake(&hotkey1, &U256::from(3), netuid, 1.into());
 
         let version_key = SubtensorModule::get_weights_version_key(netuid);
 
@@ -1412,12 +1382,7 @@ fn test_do_commit_crv3_mechanism_weights_committing_too_fast() {
         SubtensorModule::set_stake_threshold(0);
         SubtensorModule::set_validator_permit_for_uid(netuid, uid, true);
         SubtensorModule::add_balance_to_coldkey_account(&U256::from(2), 1);
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &hotkey,
-            &U256::from(2),
-            netuid,
-            1.into(),
-        );
+        add_virtual_stake(&hotkey, &U256::from(2), netuid, 1.into());
 
         // first commit OK on mecid=1
         assert_ok!(SubtensorModule::commit_timelocked_mechanism_weights(
@@ -1525,24 +1490,9 @@ fn epoch_mechanism_emergency_mode_distributes_by_stake() {
         SubtensorModule::add_balance_to_coldkey_account(&ck0, 10);
         SubtensorModule::add_balance_to_coldkey_account(&ck1, 30);
         SubtensorModule::add_balance_to_coldkey_account(&ck2, 60);
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &hk0,
-            &ck0,
-            netuid,
-            AlphaCurrency::from(10),
-        );
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &hk1,
-            &ck1,
-            netuid,
-            AlphaCurrency::from(30),
-        );
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &hk2,
-            &ck2,
-            netuid,
-            AlphaCurrency::from(60),
-        );
+        add_virtual_stake(&hk0, &ck0, netuid, AlphaCurrency::from(10));
+        add_virtual_stake(&hk1, &ck1, netuid, AlphaCurrency::from(30));
+        add_virtual_stake(&hk2, &ck2, netuid, AlphaCurrency::from(60));
 
         let emission = AlphaCurrency::from(1_000_000u64);
 
