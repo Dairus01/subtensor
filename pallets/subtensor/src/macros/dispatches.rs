@@ -2442,17 +2442,14 @@ mod dispatches {
              DispatchClass::Operational,
              Pays::No
         ))]
-        pub fn unpause_subnet_emission(
-             origin: OriginFor<T>,
-             netuid: NetUid
-        ) -> DispatchResult {
-             ensure_root(origin)?;
+        pub fn unpause_subnet_emission(origin: OriginFor<T>, netuid: NetUid) -> DispatchResult {
+            ensure_root(origin)?;
 
-             if crate::pallet::SubnetEmissionPaused::<T>::take(netuid) {
-                 Self::deposit_event(Event::SubnetEmissionResumed(netuid));
-             }
+            if crate::pallet::SubnetEmissionPaused::<T>::take(netuid) {
+                Self::deposit_event(Event::SubnetEmissionResumed(netuid));
+            }
 
-             Ok(())
+            Ok(())
         }
     }
 }

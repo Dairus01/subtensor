@@ -1,5 +1,6 @@
 use super::mock::*;
 use crate::*;
+use frame_support::assert_ok;
 use sp_core::U256;
 
 #[test]
@@ -13,13 +14,13 @@ fn test_stake_invariant_failure() {
         // Manually introduce inconsistency
         // Set TotalHotkeyAlpha for a hotkey
         TotalHotkeyAlpha::<Test>::insert(hotkey, netuid, AlphaCurrency::from(500));
-        
+
         // Register hotkey in Keys so iteration finds it
         // We need to know the UID. add_dynamic_network registers the owner hotkey at uid 0?
         // Let's insert a new one
         let uid = 1;
         Keys::<Test>::insert(netuid, uid, hotkey);
-        
+
         // Set SubnetAlphaOut to something that does NOT match 500 (plus whatever owner has)
         // Owner has some stake from network creation probably.
         // Let's just set SubnetAlphaOut to a huge number.
@@ -27,7 +28,7 @@ fn test_stake_invariant_failure() {
 
         // Ensure check runs
         BlocksSinceLastStep::<Test>::insert(netuid, 0);
-        
+
         // Run check
         SubtensorModule::check_invariants();
     });
@@ -62,14 +63,14 @@ fn test_invariants_pass_normal_operation() {
         // Normal operation - add stake
         SubtensorModule::add_balance_to_coldkey_account(&coldkey, 100000);
         // ... (requires setup reserves etc)
-        
+
         // Instead of complex setup, just verify that default state passes
-        // BlocksSinceLastStep is 0 initially? 
+        // BlocksSinceLastStep is 0 initially?
         // add_dynamic_network likely sets it.
         BlocksSinceLastStep::<Test>::insert(netuid, 0);
-        
+
         SubtensorModule::check_invariants();
-        
+
         // No panic means success
     });
 }
@@ -81,17 +82,20 @@ fn test_recovery_mechanism() {
         let coldkey = U256::from(401);
         let netuid = add_dynamic_network(&hotkey, &coldkey);
 
-        // Simulate a violation (we can't trigger the full panic flow here as it would panic test, 
+        // Simulate a violation (we can't trigger the full panic flow here as it would panic test,
         // preventing recovery check, so we manually set the paused state).
         SubnetEmissionPaused::<Test>::insert(netuid, true);
         assert!(SubnetEmissionPaused::<Test>::get(netuid));
 
         // Attempt to unpause with root
-        assert_ok!(SubtensorModule::unpause_subnet_emission(RuntimeOrigin::root(), netuid));
+        assert_ok!(SubtensorModule::unpause_subnet_emission(
+            RuntimeOrigin::root(),
+            netuid
+        ));
 
         // Validate it is unpaused
         assert!(!SubnetEmissionPaused::<Test>::get(netuid));
-        
+
         // Verify event was emitted (SubnetEmissionResumed is last event)
         System::assert_last_event(Event::SubnetEmissionResumed(netuid).into());
     });
@@ -109,13 +113,13 @@ fn test_paused_subnet_skips_check() {
         let uid = 1;
         Keys::<Test>::insert(netuid, uid, hotkey);
         SubnetAlphaOut::<Test>::insert(netuid, AlphaCurrency::from(9999999));
-        
+
         // Ensure check WOULD run
         BlocksSinceLastStep::<Test>::insert(netuid, 0);
 
         // But we PAUSE it manually
         SubnetEmissionPaused::<Test>::insert(netuid, true);
-        
+
         // Run check - should NOT panic because it skips paused subnets
         SubtensorModule::check_invariants();
     });

@@ -1,10 +1,10 @@
 use super::*;
 
-use frame_support::pallet_prelude::*;
-use sp_std::vec::Vec;
-use sp_runtime::traits::Zero;
 use crate::pallet::*;
-use subtensor_runtime_common::{NetUid, AlphaCurrency, TaoCurrency};
+use frame_support::pallet_prelude::*;
+use sp_runtime::traits::Zero;
+use sp_std::vec::Vec;
+use subtensor_runtime_common::{AlphaCurrency, NetUid, TaoCurrency};
 
 impl<T: Config> Pallet<T> {
     /// Checks invariants and handles violations.
@@ -34,7 +34,7 @@ impl<T: Config> Pallet<T> {
 
             // SubnetAlphaOut represents the total outstanding Alpha shares in the subnet.
             let stored_total_alpha = SubnetAlphaOut::<T>::get(netuid);
-            let mut calculated_total_alpha = AlphaCurrency::zero();
+            let mut calculated_total_alpha = AlphaCurrency::default();
 
             // Iterate all hotkeys in subnet.
             // Keys::iter_prefix(netuid) gives us all (uid, hotkey) pairs in the subnet.
@@ -47,14 +47,22 @@ impl<T: Config> Pallet<T> {
 
             // We expect strict equality. Alpha represents shares, which are integers.
             if stored_total_alpha != calculated_total_alpha {
-                 let msg = alloc::format!("Stake (Alpha) mismatch: stored={:?}, calc={:?}", stored_total_alpha, calculated_total_alpha);
-                 Self::handle_invariant_violation(netuid, &msg);
+                let msg = alloc::format!(
+                    "Stake (Alpha) mismatch: stored={:?}, calc={:?}",
+                    stored_total_alpha,
+                    calculated_total_alpha
+                );
+                Self::handle_invariant_violation(netuid, &msg);
             }
         }
     }
 
     fn handle_invariant_violation(netuid: NetUid, details: &str) {
-        log::error!("CRITICAL INVARIANT VIOLATION on subnet {}: {}", netuid, details);
+        log::error!(
+            "CRITICAL INVARIANT VIOLATION on subnet {}: {}",
+            netuid,
+            details
+        );
 
         // Pause emissions for this subnet to prevent further economic corruption.
         SubnetEmissionPaused::<T>::insert(netuid, true);

@@ -180,12 +180,7 @@ fn init_run_epochs(
         // let stake: u64 = 1; // alternative test: all nodes receive stake, should be same outcome, except stake
         SubtensorModule::add_balance_to_coldkey_account(&(U256::from(key)), stake);
         SubtensorModule::append_neuron(netuid, &(U256::from(key)), 0);
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &U256::from(key),
-            &U256::from(key),
-            netuid,
-            stake.into(),
-        );
+        add_virtual_stake(&U256::from(key), &U256::from(key), netuid, stake.into());
     }
     assert_eq!(SubtensorModule::get_subnetwork_n(netuid), n);
 
@@ -621,12 +616,7 @@ fn test_10_graph() {
                 stake_amount,
                 SubtensorModule::get_subnetwork_n(netuid),
             );
-            SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-                &hotkey,
-                &coldkey,
-                netuid,
-                stake_amount.into(),
-            );
+            add_virtual_stake(&hotkey, &coldkey, netuid, stake_amount.into());
             SubtensorModule::append_neuron(netuid, &hotkey, 0);
             assert_eq!(SubtensorModule::get_subnetwork_n(netuid) - 1, uid);
         }
@@ -1027,7 +1017,7 @@ fn test_bonds() {
 			SubtensorModule::add_balance_to_coldkey_account( &U256::from(key), max_stake );
 			let (nonce, work): (u64, Vec<u8>) = SubtensorModule::create_work_for_block_number( netuid, block_number, key * 1_000_000, &U256::from(key));
 			assert_ok!(SubtensorModule::register(<<Test as frame_system::Config>::RuntimeOrigin>::signed(U256::from(key)), netuid, block_number, nonce, work, U256::from(key), U256::from(key)));
-			SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet( &U256::from(key), &U256::from(key), netuid, stakes[key as usize].into() );
+			add_virtual_stake( &U256::from(key), &U256::from(key), netuid, stakes[key as usize].into() );
 		}
 		assert_eq!(SubtensorModule::get_max_allowed_uids(netuid), n);
 		assert_eq!(SubtensorModule::get_subnetwork_n(netuid), n);
@@ -1383,12 +1373,7 @@ fn test_active_stake() {
                 U256::from(key),
                 U256::from(key)
             ));
-            SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-                &U256::from(key),
-                &U256::from(key),
-                netuid,
-                stake.into(),
-            );
+            add_virtual_stake(&U256::from(key), &U256::from(key), netuid, stake.into());
         }
         assert_eq!(SubtensorModule::get_max_allowed_uids(netuid), n);
         assert_eq!(SubtensorModule::get_subnetwork_n(netuid), n);
@@ -1601,12 +1586,7 @@ fn test_outdated_weights() {
                 U256::from(key),
                 U256::from(key)
             ));
-            SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-                &U256::from(key),
-                &U256::from(key),
-                netuid,
-                stake.into(),
-            );
+            add_virtual_stake(&U256::from(key), &U256::from(key), netuid, stake.into());
         }
         assert_eq!(SubtensorModule::get_subnetwork_n(netuid), n);
         assert_eq!(SubtensorModule::get_registrations_this_block(netuid), 4);
@@ -1790,7 +1770,7 @@ fn test_zero_weights() {
         }
         for validator in 0..(n / 2) as u64 {
             SubtensorModule::add_balance_to_coldkey_account(&U256::from(validator), stake);
-            SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
+            add_virtual_stake(
                 &U256::from(validator),
                 &U256::from(validator),
                 netuid,
@@ -1993,12 +1973,7 @@ fn test_deregistered_miner_bonds() {
                 U256::from(key),
                 U256::from(key)
             ));
-            SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-                &U256::from(key),
-                &U256::from(key),
-                netuid,
-                stake.into(),
-            );
+            add_virtual_stake(&U256::from(key), &U256::from(key), netuid, stake.into());
         }
         assert_eq!(SubtensorModule::get_subnetwork_n(netuid), n);
         assert_eq!(SubtensorModule::get_registrations_this_block(netuid), 4);
@@ -2190,7 +2165,7 @@ fn test_validator_permits() {
                             U256::from(key),
                             U256::from(key)
                         ));
-                        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
+                        add_virtual_stake(
                             &U256::from(key),
                             &U256::from(key),
                             netuid,
@@ -2225,7 +2200,7 @@ fn test_validator_permits() {
                             &(U256::from(*server as u64)),
                             2 * network_n as u64,
                         );
-                        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
+                        add_virtual_stake(
                             &(U256::from(*server as u64)),
                             &(U256::from(*server as u64)),
                             netuid,
@@ -2475,7 +2450,7 @@ fn test_can_set_self_weight_as_subnet_owner() {
         register_ok_neuron(netuid, other_hotkey, subnet_owner_coldkey, 0);
 
         // Add stake to owner hotkey.
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
+        add_virtual_stake(
             &subnet_owner_hotkey,
             &subnet_owner_coldkey,
             netuid,
@@ -2531,12 +2506,7 @@ fn test_epoch_outputs_single_staker_registered_no_weights() {
         let coldkey = U256::from(2);
         register_ok_neuron(netuid, hotkey, coldkey, 0);
         // Give non-zero alpha
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &hotkey,
-            &coldkey,
-            netuid,
-            1.into(),
-        );
+        add_virtual_stake(&hotkey, &coldkey, netuid, 1.into());
 
         let pending_alpha = AlphaCurrency::from(1_000_000_000);
         let hotkey_emission = SubtensorModule::epoch(netuid, pending_alpha);
@@ -2712,7 +2682,7 @@ fn setup_yuma_3_scenario(netuid: NetUid, n: u16, sparse: bool, max_stake: u64, s
             U256::from(key),
             U256::from(key)
         ));
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
+        add_virtual_stake(
             &U256::from(key),
             &U256::from(key),
             netuid,
@@ -3587,33 +3557,18 @@ fn test_epoch_masks_incoming_to_sniped_uid_prevents_inheritance() {
         /* Validator uid‑0 */
         let (val_hot, val_cold) = (U256::from(100), U256::from(200));
         register_ok_neuron(netuid, val_hot, val_cold, 0);
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &val_hot,
-            &val_cold,
-            netuid,
-            10_000.into(),
-        );
+        add_virtual_stake(&val_hot, &val_cold, netuid, 10_000.into());
         SubtensorModule::set_validator_permit_for_uid(netuid, 0, true);
 
         /* Miner uid‑1 (to be sniped later) */
         let (old_hot, old_cold) = (U256::from(101), U256::from(201));
         register_ok_neuron(netuid, old_hot, old_cold, 0);
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &old_hot,
-            &old_cold,
-            netuid,
-            100.into(),
-        );
+        add_virtual_stake(&old_hot, &old_cold, netuid, 100.into());
 
         /* filler uid‑2 */
         let (fill_hot, fill_cold) = (U256::from(102), U256::from(202));
         register_ok_neuron(netuid, fill_hot, fill_cold, 0);
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &fill_hot,
-            &fill_cold,
-            netuid,
-            5_000.into(),
-        );
+        add_virtual_stake(&fill_hot, &fill_cold, netuid, 5_000.into());
         SubtensorModule::set_max_allowed_validators(netuid, 3);
 
         run_to_block(tempo as u64 * 2 + 1);
@@ -3638,12 +3593,7 @@ fn test_epoch_masks_incoming_to_sniped_uid_prevents_inheritance() {
         /* register new miner (snipes) */
         let (new_hot, new_cold) = (U256::from(103), U256::from(203));
         register_ok_neuron(netuid, new_hot, new_cold, 0);
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &new_hot,
-            &new_cold,
-            netuid,
-            10_000.into(),
-        );
+        add_virtual_stake(&new_hot, &new_cold, netuid, 10_000.into());
         let new_uid = SubtensorModule::get_uid_for_net_and_hotkey(netuid, &new_hot)
             .expect("new miner gets UID");
 
@@ -3679,22 +3629,12 @@ fn test_epoch_no_mask_when_commit_reveal_disabled() {
 
         let (hot, cold) = (U256::from(1000), U256::from(1100));
         register_ok_neuron(netuid, hot, cold, 0);
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &hot,
-            &cold,
-            netuid,
-            1_000.into(),
-        );
+        add_virtual_stake(&hot, &cold, netuid, 1_000.into());
         SubtensorModule::set_validator_permit_for_uid(netuid, 0, true);
 
         let (hot1, cold1) = (U256::from(1001), U256::from(1101));
         register_ok_neuron(netuid, hot1, cold1, 0);
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &hot1,
-            &cold1,
-            netuid,
-            1_000.into(),
-        );
+        add_virtual_stake(&hot1, &cold1, netuid, 1_000.into());
 
         SubtensorModule::set_weights_set_rate_limit(netuid, 0);
         assert_ok!(SubtensorModule::set_weights(
@@ -3731,12 +3671,7 @@ fn test_epoch_does_not_mask_outside_window_but_masks_inside() {
         /* validator uid‑0 */
         let (v_hot, v_cold) = (U256::from(2000), U256::from(2100));
         register_ok_neuron(netuid, v_hot, v_cold, 0);
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &v_hot,
-            &v_cold,
-            netuid,
-            10_000.into(),
-        );
+        add_virtual_stake(&v_hot, &v_cold, netuid, 10_000.into());
         SubtensorModule::set_validator_permit_for_uid(netuid, 0, true);
         SubtensorModule::set_max_allowed_validators(netuid, 1);
 
@@ -3748,12 +3683,7 @@ fn test_epoch_does_not_mask_outside_window_but_masks_inside() {
         /* UID‑1 — outside window */
         let (old_hot, old_cold) = (U256::from(2001), U256::from(2101));
         register_ok_neuron(netuid, old_hot, old_cold, 0);
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &old_hot,
-            &old_cold,
-            netuid,
-            1_000.into(),
-        );
+        add_virtual_stake(&old_hot, &old_cold, netuid, 1_000.into());
 
         /* let first commit expire for UID‑1 */
         for _ in 0..(reveal + 1) {
@@ -3769,21 +3699,11 @@ fn test_epoch_does_not_mask_outside_window_but_masks_inside() {
         /* UID‑2, UID‑3 — inside window */
         let (mid_hot, mid_cold) = (U256::from(2002), U256::from(2102));
         register_ok_neuron(netuid, mid_hot, mid_cold, 0);
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &mid_hot,
-            &mid_cold,
-            netuid,
-            1_000.into(),
-        );
+        add_virtual_stake(&mid_hot, &mid_cold, netuid, 1_000.into());
 
         let (new_hot, new_cold) = (U256::from(2003), U256::from(2103));
         register_ok_neuron(netuid, new_hot, new_cold, 0);
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &new_hot,
-            &new_cold,
-            netuid,
-            1_000.into(),
-        );
+        add_virtual_stake(&new_hot, &new_cold, netuid, 1_000.into());
 
         run_to_block(System::block_number() + 1); // avoid out‑dated
 

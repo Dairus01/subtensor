@@ -35,6 +35,7 @@ mod benchmarks;
 // =========================
 pub mod coinbase;
 pub mod epoch;
+pub mod invariants;
 pub mod macros;
 pub mod migrations;
 pub mod rpc_info;
@@ -42,7 +43,6 @@ pub mod staking;
 pub mod subnets;
 pub mod swap;
 pub mod utils;
-pub mod invariants;
 use crate::utils::rate_limiting::{Hyperparameter, TransactionType};
 use macros::{config, dispatches, errors, events, genesis, hooks};
 
@@ -1570,8 +1570,7 @@ pub mod pallet {
 
     /// --- MAP ( netuid ) --> emission_paused
     #[pallet::storage]
-    pub type SubnetEmissionPaused<T: Config> =
-        StorageMap<_, Identity, NetUid, bool, ValueQuery>;
+    pub type SubnetEmissionPaused<T: Config> = StorageMap<_, Identity, NetUid, bool, ValueQuery>;
 
     /// --- MAP ( netuid ) --> largest_locked
     #[pallet::storage]

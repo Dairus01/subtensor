@@ -922,6 +922,24 @@ pub(crate) fn setup_reserves(netuid: NetUid, tao: TaoCurrency, alpha: AlphaCurre
     SubnetAlphaIn::<Test>::set(netuid, alpha);
 }
 
+pub fn add_virtual_stake(hotkey: &U256, coldkey: &U256, netuid: NetUid, amount: AlphaCurrency) {
+    let added = SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
+        hotkey, coldkey, netuid, amount,
+    );
+    SubnetAlphaOut::<Test>::mutate(netuid, |total| {
+        *total = total.saturating_add(added);
+    });
+}
+
+pub fn remove_virtual_stake(hotkey: &U256, coldkey: &U256, netuid: NetUid, amount: AlphaCurrency) {
+    SubtensorModule::decrease_stake_for_hotkey_and_coldkey_on_subnet(
+        hotkey, coldkey, netuid, amount,
+    );
+    SubnetAlphaOut::<Test>::mutate(netuid, |total| {
+        *total = total.saturating_sub(amount);
+    });
+}
+
 pub(crate) fn swap_tao_to_alpha(netuid: NetUid, tao: TaoCurrency) -> (AlphaCurrency, u64) {
     if netuid.is_root() {
         return (tao.to_u64().into(), 0);

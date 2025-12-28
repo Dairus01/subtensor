@@ -134,7 +134,7 @@ fn test_dividends_with_run_to_block() {
         register_ok_neuron(netuid, neuron_dest_hotkey_id, coldkey_account_id, 12323);
 
         // Add some stake to the hotkey account, so we can test for emission before the transfer takes place
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
+        add_virtual_stake(
             &neuron_src_hotkey_id,
             &coldkey_account_id,
             netuid,
@@ -405,7 +405,7 @@ fn test_remove_stake_ok_no_emission() {
         assert_eq!(SubtensorModule::get_coldkey_balance(&coldkey_account_id), 0);
 
         // Give the neuron some stake to remove
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
+        add_virtual_stake(
             &hotkey_account_id,
             &coldkey_account_id,
             netuid,
@@ -471,7 +471,7 @@ fn test_remove_stake_amount_too_low() {
         assert_eq!(SubtensorModule::get_coldkey_balance(&coldkey_account_id), 0);
 
         // Give the neuron some stake to remove
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
+        add_virtual_stake(
             &hotkey_account_id,
             &coldkey_account_id,
             netuid,
@@ -516,12 +516,7 @@ fn test_remove_stake_below_min_stake() {
         assert_eq!(SubtensorModule::get_coldkey_balance(&coldkey_account_id), 0);
 
         // Give the neuron some stake to remove
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &hotkey_account_id,
-            &coldkey_account_id,
-            netuid,
-            amount,
-        );
+        add_virtual_stake(&hotkey_account_id, &coldkey_account_id, netuid, amount);
 
         // Unstake less than full stake - errors
         assert_noop!(
@@ -638,12 +633,7 @@ fn test_remove_stake_ok_hotkey_does_not_belong_to_coldkey() {
         let netuid = add_dynamic_network(&hotkey_id, &coldkey_id);
 
         // Give the neuron some stake to remove
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &hotkey_id,
-            &other_cold_key,
-            netuid,
-            amount.into(),
-        );
+        add_virtual_stake(&hotkey_id, &other_cold_key, netuid, amount.into());
 
         assert_ok!(SubtensorModule::remove_stake(
             RuntimeOrigin::signed(other_cold_key),
@@ -708,7 +698,7 @@ fn test_remove_stake_total_balance_no_change() {
         assert_eq!(initial_total_balance, 0);
 
         // Give the neuron some stake to remove
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
+        add_virtual_stake(
             &hotkey_account_id,
             &coldkey_account_id,
             netuid,
@@ -1194,12 +1184,7 @@ fn test_add_stake_to_hotkey_account_ok() {
             SubtensorModule::get_network_min_lock()
         );
 
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &hotkey_id,
-            &coldkey_id,
-            netuid,
-            amount.into(),
-        );
+        add_virtual_stake(&hotkey_id, &coldkey_id, netuid, amount.into());
 
         // The stake that is now in the account, should equal the amount
         assert_abs_diff_eq!(
@@ -1225,12 +1210,7 @@ fn test_remove_stake_from_hotkey_account() {
         register_ok_neuron(netuid, hotkey_id, coldkey_id, 192213123);
 
         // Add some stake that can be removed
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &hotkey_id,
-            &coldkey_id,
-            netuid,
-            amount.into(),
-        );
+        add_virtual_stake(&hotkey_id, &coldkey_id, netuid, amount.into());
 
         // Prelimiary checks
         assert_abs_diff_eq!(
@@ -1240,7 +1220,7 @@ fn test_remove_stake_from_hotkey_account() {
         );
 
         // Remove stake
-        SubtensorModule::decrease_stake_for_hotkey_and_coldkey_on_subnet(
+        remove_virtual_stake(
             &hotkey_id,
             &coldkey_id,
             netuid,
@@ -1276,12 +1256,7 @@ fn test_remove_stake_from_hotkey_account_registered_in_various_networks() {
         };
 
         // Add some stake that can be removed
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &hotkey_id,
-            &coldkey_id,
-            netuid,
-            amount.into(),
-        );
+        add_virtual_stake(&hotkey_id, &coldkey_id, netuid, amount.into());
 
         assert_eq!(
             SubtensorModule::get_stake_for_uid_and_subnetwork(netuid, neuron_uid),
@@ -1293,7 +1268,7 @@ fn test_remove_stake_from_hotkey_account_registered_in_various_networks() {
         );
 
         // Remove all stake
-        SubtensorModule::decrease_stake_for_hotkey_and_coldkey_on_subnet(
+        remove_virtual_stake(
             &hotkey_id,
             &coldkey_id,
             netuid,
@@ -1452,12 +1427,7 @@ fn test_has_enough_stake_yes() {
         let coldkey_id = U256::from(87989);
         let intial_amount = 10_000;
         let netuid = NetUid::from(add_dynamic_network(&hotkey_id, &coldkey_id));
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &hotkey_id,
-            &coldkey_id,
-            netuid,
-            intial_amount.into(),
-        );
+        add_virtual_stake(&hotkey_id, &coldkey_id, netuid, intial_amount.into());
 
         assert_abs_diff_eq!(
             SubtensorModule::get_total_stake_for_hotkey(&hotkey_id),
@@ -1488,12 +1458,7 @@ fn test_has_enough_stake_no() {
         let coldkey_id = U256::from(87989);
         let intial_amount = 10_000;
         let netuid = add_dynamic_network(&hotkey_id, &coldkey_id);
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &hotkey_id,
-            &coldkey_id,
-            netuid,
-            intial_amount.into(),
-        );
+        add_virtual_stake(&hotkey_id, &coldkey_id, netuid, intial_amount.into());
 
         assert_abs_diff_eq!(
             SubtensorModule::get_total_stake_for_hotkey(&hotkey_id),
@@ -1556,12 +1521,7 @@ fn test_has_enough_stake_no_for_zero() {
 fn test_non_existent_account() {
     new_test_ext(1).execute_with(|| {
         let netuid = NetUid::from(1);
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &U256::from(0),
-            &(U256::from(0)),
-            netuid,
-            10.into(),
-        );
+        add_virtual_stake(&U256::from(0), &(U256::from(0)), netuid, 10.into());
         assert_eq!(
             SubtensorModule::get_stake_for_hotkey_and_coldkey_on_subnet(
                 &U256::from(0),
@@ -2653,12 +2613,7 @@ fn test_remove_stake_fee_realistic_values() {
         TotalHotkeyAlphaLastEpoch::<Test>::insert(hotkey, netuid, alpha_to_unstake);
 
         // Add stake first time to init TotalHotkeyAlpha
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &hotkey,
-            &coldkey,
-            netuid,
-            alpha_to_unstake,
-        );
+        add_virtual_stake(&hotkey, &coldkey, netuid, alpha_to_unstake);
 
         // Remove stake to measure fee
         let balance_before = SubtensorModule::get_coldkey_balance(&coldkey);
@@ -3954,7 +3909,7 @@ fn test_remove_stake_limit_fill_or_kill() {
         let netuid = add_dynamic_network(&hotkey_account_id, &coldkey_account_id);
 
         // Give the neuron some stake to remove
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
+        add_virtual_stake(
             &hotkey_account_id,
             &coldkey_account_id,
             netuid,
@@ -4226,12 +4181,7 @@ fn test_move_stake_limit_partial() {
         register_ok_neuron(destination_netuid, hotkey, coldkey, 192213123);
 
         // Give the neuron some stake to remove
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &hotkey,
-            &coldkey,
-            origin_netuid,
-            stake_amount,
-        );
+        add_virtual_stake(&hotkey, &coldkey, origin_netuid, stake_amount);
 
         // Forse-set alpha in and tao reserve to make price equal 1.5 on both origin and destination,
         // but there's much more liquidity on destination, so its price wouldn't go up when restaked
@@ -4288,12 +4238,7 @@ fn test_unstake_all_hits_liquidity_min() {
         let netuid = add_dynamic_network(&subnet_owner_hotkey, &subnet_owner_coldkey);
         register_ok_neuron(netuid, hotkey, coldkey, 192213123);
         // Give the neuron some stake to remove
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &hotkey,
-            &coldkey,
-            netuid,
-            stake_amount,
-        );
+        add_virtual_stake(&hotkey, &coldkey, netuid, stake_amount);
 
         // Setup the Alpha pool so that removing all the Alpha will bring liqudity below the minimum
         let remaining_tao = TaoCurrency::from(u64::from(mock::SwapMinimumReserve::get()) - 1);
@@ -4979,12 +4924,7 @@ fn test_increase_stake_for_hotkey_and_coldkey_on_subnet_adds_to_staking_hotkeys_
         // check entry has no hotkey
         assert!(!StakingHotkeys::<Test>::get(coldkey).contains(&hotkey));
 
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &hotkey,
-            &coldkey,
-            netuid,
-            stake_amount.into(),
-        );
+        add_virtual_stake(&hotkey, &coldkey, netuid, stake_amount.into());
 
         // Check entry exists in the staking hotkeys map
         assert!(StakingHotkeys::<Test>::contains_key(coldkey));
@@ -4995,12 +4935,7 @@ fn test_increase_stake_for_hotkey_and_coldkey_on_subnet_adds_to_staking_hotkeys_
         assert!(!StakingHotkeys::<Test>::contains_key(coldkey1));
 
         // Run increase stake for hotkey and coldkey1 on subnet
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &hotkey,
-            &coldkey1,
-            netuid,
-            stake_amount.into(),
-        );
+        add_virtual_stake(&hotkey, &coldkey1, netuid, stake_amount.into());
 
         // Check entry exists in the staking hotkeys map for coldkey1
         assert!(StakingHotkeys::<Test>::contains_key(coldkey1));
@@ -5020,7 +4955,7 @@ fn test_remove_stake_full_limit_ok() {
         let netuid = add_dynamic_network(&hotkey_account_id, &coldkey_account_id);
 
         // Give the neuron some stake to remove
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
+        add_virtual_stake(
             &hotkey_account_id,
             &coldkey_account_id,
             netuid,
@@ -5068,7 +5003,7 @@ fn test_remove_stake_full_limit_fails_slippage_too_high() {
         let netuid = add_dynamic_network(&hotkey_account_id, &coldkey_account_id);
 
         // Give the neuron some stake to remove
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
+        add_virtual_stake(
             &hotkey_account_id,
             &coldkey_account_id,
             netuid,
@@ -5106,7 +5041,7 @@ fn test_remove_stake_full_limit_ok_with_no_limit_price() {
         let netuid = add_dynamic_network(&hotkey_account_id, &coldkey_account_id);
 
         // Give the neuron some stake to remove
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
+        add_virtual_stake(
             &hotkey_account_id,
             &coldkey_account_id,
             netuid,
@@ -5354,7 +5289,7 @@ fn setup_positions(netuid: NetUid) {
             &U256::from(coldkey),
             1_000_000_000_000_000,
         );
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
+        add_virtual_stake(
             &U256::from(hotkey),
             &U256::from(coldkey),
             netuid.into(),
@@ -5530,7 +5465,7 @@ fn test_remove_root_updates_counters() {
         SubtensorModule::add_balance_to_coldkey_account(&coldkey_account_id, initial_balance);
 
         // Setup existing stake
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
+        add_virtual_stake(
             &hotkey_account_id,
             &coldkey_account_id,
             NetUid::ROOT,

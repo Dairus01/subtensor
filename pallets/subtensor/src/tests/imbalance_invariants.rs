@@ -13,7 +13,7 @@ fn test_imbalance_conservation_burn_mint() {
         // Setup initial flows to ensure non-zero emission logic runs
         SubnetTaoFlow::<Test>::insert(netuid, 100_000_000_i64);
         SubnetMechanism::<Test>::insert(netuid, 1);
-        
+
         // Ensure subnets to emit to calculates correctly
         let subnets = SubtensorModule::get_all_subnet_netuids();
         let to_emit = SubtensorModule::get_subnets_to_emit_to(&subnets);
@@ -28,7 +28,10 @@ fn test_imbalance_conservation_burn_mint() {
         let initial_stake = TotalStake::<Test>::get();
 
         log::info!("Initial Balances Issuance: {:?}", initial_balances_issuance);
-        log::info!("Initial Subtensor Issuance: {:?}", initial_subtensor_issuance);
+        log::info!(
+            "Initial Subtensor Issuance: {:?}",
+            initial_subtensor_issuance
+        );
         log::info!("Initial Stake: {:?}", initial_stake);
 
         // Run Coinbase
@@ -38,7 +41,7 @@ fn test_imbalance_conservation_burn_mint() {
         // 3. Drop/Burn Imbalance (Balances::TotalIssuance - 1M)
         // 4. Update Subtensor::TotalIssuance (+1M)
         // 5. Update TotalStake (+1M)
-        
+
         SubtensorModule::run_coinbase(emission);
 
         let final_balances_issuance = Balances::total_issuance();

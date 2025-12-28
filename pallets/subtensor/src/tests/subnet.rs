@@ -417,12 +417,7 @@ fn test_subtoken_enable_reject_trading_before_enable() {
         SubtensorModule::add_balance_to_coldkey_account(&coldkey_account_id, 10_000);
 
         // Give some stake
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &hotkey_account_id,
-            &coldkey_account_id,
-            netuid,
-            stake_bal,
-        );
+        add_virtual_stake(&hotkey_account_id, &coldkey_account_id, netuid, stake_bal);
 
         // all trading extrinsic should be rejected.
         assert_noop!(

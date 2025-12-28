@@ -93,12 +93,7 @@ fn test_share_based_staking() {
 
         // Test Case 1: Initial Stake
         // The first stake should create shares 1:1 with the staked amount
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &primary_hotkey,
-            &primary_coldkey,
-            netuid,
-            stake_amount,
-        );
+        add_virtual_stake(&primary_hotkey, &primary_coldkey, netuid, stake_amount);
         let initial_stake = SubtensorModule::get_stake_for_hotkey_and_coldkey_on_subnet(
             &primary_hotkey,
             &primary_coldkey,
@@ -118,12 +113,7 @@ fn test_share_based_staking() {
 
         // Test Case 2: Additional Stake to Same Account
         // Adding more stake to the same account should increase shares proportionally
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &primary_hotkey,
-            &primary_coldkey,
-            netuid,
-            stake_amount,
-        );
+        add_virtual_stake(&primary_hotkey, &primary_coldkey, netuid, stake_amount);
         let stake_after_second = SubtensorModule::get_stake_for_hotkey_and_coldkey_on_subnet(
             &primary_hotkey,
             &primary_coldkey,
@@ -169,12 +159,7 @@ fn test_share_based_staking() {
         // Test Case 4: Multiple Coldkey Support
         // System should support multiple coldkeys staking to the same hotkey
         let secondary_coldkey = U256::from(3);
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &primary_hotkey,
-            &secondary_coldkey,
-            netuid,
-            stake_amount,
-        );
+        add_virtual_stake(&primary_hotkey, &secondary_coldkey, netuid, stake_amount);
         let secondary_stake = SubtensorModule::get_stake_for_hotkey_and_coldkey_on_subnet(
             &primary_hotkey,
             &secondary_coldkey,
@@ -247,7 +232,7 @@ fn test_share_based_staking() {
 
         // Test Case 7: Stake Removal
         // Verify correct stake removal from both accounts
-        SubtensorModule::decrease_stake_for_hotkey_and_coldkey_on_subnet(
+        remove_virtual_stake(
             &primary_hotkey,
             &primary_coldkey,
             netuid,
@@ -273,7 +258,7 @@ fn test_share_based_staking() {
             "Stake removal should decrease balance by exact amount"
         );
 
-        SubtensorModule::decrease_stake_for_hotkey_and_coldkey_on_subnet(
+        remove_virtual_stake(
             &primary_hotkey,
             &secondary_coldkey,
             netuid,
@@ -320,7 +305,7 @@ fn test_share_based_staking() {
         // Additional Edge Cases to Test:
 
         // Test staking with zero amount
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
+        add_virtual_stake(
             &primary_hotkey,
             &primary_coldkey,
             netuid,
@@ -346,7 +331,7 @@ fn test_share_based_staking() {
         log::info!(
             "Attempting to remove excessive stake: {available_stake} + 1000 = {excessive_amount}"
         );
-        SubtensorModule::decrease_stake_for_hotkey_and_coldkey_on_subnet(
+        remove_virtual_stake(
             &primary_hotkey,
             &primary_coldkey,
             netuid,
@@ -365,12 +350,7 @@ fn test_share_based_staking() {
 
         // Test staking to non-existent hotkey
         let non_existent_hotkey = U256::from(4);
-        SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-            &non_existent_hotkey,
-            &primary_coldkey,
-            netuid,
-            stake_amount,
-        );
+        add_virtual_stake(&non_existent_hotkey, &primary_coldkey, netuid, stake_amount);
         let non_existent_hotkey_stake = SubtensorModule::get_stake_for_hotkey_and_coldkey_on_subnet(
             &non_existent_hotkey,
             &primary_coldkey,
@@ -383,7 +363,7 @@ fn test_share_based_staking() {
 
         // Test removing stake from non-existent coldkey
         let non_existent_coldkey = U256::from(5);
-        SubtensorModule::decrease_stake_for_hotkey_and_coldkey_on_subnet(
+        remove_virtual_stake(
             &primary_hotkey,
             &non_existent_coldkey,
             netuid,
@@ -423,19 +403,14 @@ fn test_share_based_staking_denominator_precision() {
             let stake_amount = AlphaCurrency::from(test_case.0);
             let unstake_amount = AlphaCurrency::from(test_case.1);
 
-            SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-                &hotkey1,
-                &coldkey1,
-                netuid,
-                stake_amount,
-            );
+            add_virtual_stake(&hotkey1, &coldkey1, netuid, stake_amount);
             assert_eq!(
                 stake_amount,
                 Alpha::<Test>::get((hotkey1, coldkey1, netuid))
                     .to_num::<u64>()
                     .into(),
             );
-            SubtensorModule::decrease_stake_for_hotkey_and_coldkey_on_subnet(
+            remove_virtual_stake(
                 &hotkey1,
                 &coldkey1,
                 netuid,
@@ -484,25 +459,15 @@ fn test_share_based_staking_stake_unstake_inject() {
             let inject_amount = AlphaCurrency::from(test_case.2);
             let tolerance = test_case.3;
 
-            SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-                &hotkey1,
-                &coldkey1,
-                netuid,
-                stake_amount,
-            );
-            SubtensorModule::decrease_stake_for_hotkey_and_coldkey_on_subnet(
+            add_virtual_stake(&hotkey1, &coldkey1, netuid, stake_amount);
+            remove_virtual_stake(
                 &hotkey1,
                 &coldkey1,
                 netuid,
                 unstake_amount,
             );
-            SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-                &hotkey1,
-                &coldkey2,
-                netuid,
-                stake_amount,
-            );
-            SubtensorModule::decrease_stake_for_hotkey_and_coldkey_on_subnet(
+            add_virtual_stake(&hotkey1, &coldkey2, netuid, stake_amount);
+            remove_virtual_stake(
                 &hotkey1,
                 &coldkey2,
                 netuid,
@@ -556,19 +521,9 @@ fn test_share_based_staking_stake_inject_stake_new() {
             let stake_amount_2 = AlphaCurrency::from(test_case.2);
             let tolerance = test_case.3;
 
-            SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-                &hotkey1,
-                &coldkey1,
-                netuid,
-                stake_amount,
-            );
+            add_virtual_stake(&hotkey1, &coldkey1, netuid, stake_amount);
             SubtensorModule::increase_stake_for_hotkey_on_subnet(&hotkey1, netuid, inject_amount);
-            SubtensorModule::increase_stake_for_hotkey_and_coldkey_on_subnet(
-                &hotkey1,
-                &coldkey2,
-                netuid,
-                stake_amount_2,
-            );
+            add_virtual_stake(&hotkey1, &coldkey2, netuid, stake_amount_2);
 
             let stake1 = SubtensorModule::get_stake_for_hotkey_and_coldkey_on_subnet(
                 &hotkey1, &coldkey1, netuid,
